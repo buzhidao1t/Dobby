@@ -1,0 +1,53 @@
+name: Build Android
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CMAKE_VERSION: 3.25.2
+  LLVM_VERSION: 15.0.6
+  NDK_VERSION: r25b
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: init cross compile env (cmake / llvm / ndk)
+      run: |
+        sh scripts/setup_linux_cross_compile.sh
+        mkdir -p artifact
+      shell: bash
+
+    - name: compile android
+      run: |
+        python3 scripts/platform_builder.py --platform=android --arch=all \
+          --cmake_dir=$HOME/opt/cmake-$CMAKE_VERSION \
+          --llvm_dir=$HOME/opt/llvm-$LLVM_VERSION \
+          --android_ndk_dir=$HOME/opt/ndk-$NDK_VERSION
+        cp include/dobby.h build/android
+        tar -zcvf build/dobby-android-all.tar.gz build/android
+        cp build/dobby-android-all.tar.gz artifact/
+      shell: bash
+
+    - name: show result
+      run: |
+        ls -lh artifact/
+        tar -tzf build/dobby-android-all.tar.gz | head -50
+      shell: bash
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dobby-android
+        path: artifact/dobby-android-all.tar.gz
+        if-no-files-found: error
