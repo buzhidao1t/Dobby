@@ -23,6 +23,11 @@ jobs:
       with:
         submodules: recursive
 
+    # 关键：固定到仍含 pipes 模块的 Python
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
     - name: init cross compile env (cmake / llvm / ndk)
       run: |
         sh scripts/setup_linux_cross_compile.sh
@@ -31,6 +36,7 @@ jobs:
 
     - name: compile android
       run: |
+        python3 --version
         python3 scripts/platform_builder.py --platform=android --arch=all \
           --cmake_dir=$HOME/opt/cmake-$CMAKE_VERSION \
           --llvm_dir=$HOME/opt/llvm-$LLVM_VERSION \
